@@ -244,12 +244,21 @@ export async function moveScheduleItem(
   newSchedulePeriod: PeriodContentItem,
   teacherID: number
 ): Promise<BackendReturn> {
+  // Check if new period exceeds the maximum number of allowed subjects
+  if (newSchedulePeriod.duration + newSchedulePeriod.startTime-1 > 10) {
+    return {
+      error: {
+        message: "new period exceeds the maximum number of allowed subjects.",
+      },
+    };
+  }
+
   // Check overlap
   if (await isOverlappingExistingItems(newDay, newSchedulePeriod, teacherID))
     return {
       error: {
         message:
-          "new period duration causes it to overlap with other relevant periods",
+          "new period duration causes it to overlap with other relevant periods.",
       },
     };
 
@@ -262,6 +271,7 @@ export async function moveScheduleItem(
 
   return { error };
 }
+
 
 export async function editScheduleItemDuration(
   supabase: DatabaseClient,
