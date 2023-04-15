@@ -245,7 +245,7 @@ export async function moveScheduleItem(
   teacherID: number
 ): Promise<BackendReturn> {
   // Check if new period exceeds the maximum number of allowed subjects
-  if (newSchedulePeriod.duration + newSchedulePeriod.startTime-1 > 10) {
+  if (newSchedulePeriod.duration + newSchedulePeriod.startTime > 11) {
     return {
       error: {
         message: "new period exceeds the maximum number of allowed subjects.",

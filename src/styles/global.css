@@ -36,3 +36,9 @@
       dark:prose-invert;
   }
 }
+
+@layer utilities {
+  .top-60 {
+    top: 60rem;
+  }
+}

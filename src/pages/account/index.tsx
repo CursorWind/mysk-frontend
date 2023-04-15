@@ -74,8 +74,8 @@ const BasicInfoSection = ({
         {/* Profile picture section */}
         <div>
           {/* Profile picture */}
-          <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl">
-            <ProfilePicture src={user.profile} />
+          <div className="aspect-square overflow-hidden rounded-full w-32 h-32">
+            <ProfilePicture src={user.profile}/>
           </div>
         </div>
 

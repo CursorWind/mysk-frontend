@@ -1,259 +1,224 @@
 // External libraries
+import type {
+  GetServerSideProps,
+  NextApiRequest,
+  NextApiResponse,
+  NextPage,
+} from "next";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import Head from "next/head";
+
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
+
+import { useEffect, useMemo, useState } from "react";
+
+import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+
 import {
-    GetServerSideProps,
-    NextApiRequest,
-    NextApiResponse,
-    NextPage,
-  } from "next";
-  import Head from "next/head";
-  import Link from "next/link";
-  import { useRouter } from "next/router";
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+
+// SK Components
+import {
+  Actions,
+  Button,
+  MaterialIcon,
+  RegularLayout,
+  Search,
+  Section,
+  Table,
+  Title,
+} from "@suankularb-components/react";
+
+// Components
+import DataTableHeader from "@components/data-table/DataTableHeader";
+import DataTableBody from "@components/data-table/DataTableBody";
+import ConfirmDelete from "@components/dialogs/ConfirmDelete";
+import EditPersonDialog from "@components/dialogs/EditPerson";
+import ImportDataDialog from "@components/dialogs/ImportData";
+import CopyButton from "@components/CopyButton";
+
+// Backend
+import { db2Student } from "@utils/backend/database";
+import { deleteStudent, importStudents } from "@utils/backend/person/student";
+
+// Helpers
+import { nameJoiner } from "@utils/helpers/name";
+import { createTitleStr } from "@utils/helpers/title";
+
+// Hooks
+import { useToggle } from "@utils/hooks/toggle";
+
+// Types
+import { DatabaseClient, LangCode } from "@utils/types/common";
+import { ImportedStudentData, Student } from "@utils/types/person";
+
+const StudentTable = ({
+  students,
+  query,
+  setEditingIdx,
+  toggleShowEdit,
+  toggleShowConfDel,
+}: {
+  students: Student[];
+  query?: string;
+  setEditingIdx: (id: number) => void;
+  toggleShowEdit: () => void;
+  toggleShowConfDel: () => void;
+}) => {
+  const { t } = useTranslation("admin");
+  const locale = useRouter().locale as LangCode;
+
+  const [globalFilter, setGlobalFilter] = useState<string>("");
+  useEffect(() => setGlobalFilter(query || ""), [query]);
   
-  import { useTranslation } from "next-i18next";
-  import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-  
-  import { FC } from "react";
-  
-  import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
-  
-  // SK Components import
-  import {
-    Actions,
-    Button,
-    Card,
-    CardActions,
-    CardHeader,
-    CardSupportingText,
-    Header,
-    LayoutGridCols,
-    LinkButton,
-    MaterialIcon,
-    RegularLayout,
-    Section,
-    Title,
-  } from "@suankularb-components/react";
-  
-  // Components
-  import BlockingPane from "@components/BlockingPane";
-  import SubjectCard from "@components/SubjectCard";
-  import LogOutDialog from "@components/dialogs/LogOut";
-  import AddSubjectDialog from "@components/dialogs/AddSubject";
-  import Schedule from "@components/schedule/Schedule";
-  
-  // Backend
-  import { getUserMetadata } from "@utils/backend/account";
-  import { getSchedule } from "@utils/backend/schedule/schedule";
-  import { getTeachingSubjects } from "@utils/backend/subject/subject";
-  
-  // Types
-  import { LangCode } from "@utils/types/common";
-  import { Schedule as ScheduleType } from "@utils/types/schedule";
-  import { SubjectWNameAndCode } from "@utils/types/subject";
-  import { ClassWNumber } from "@utils/types/class";
-  
-  // Helpers
-  import { getLocalePath } from "@utils/helpers/i18n";
-  import { createTitleStr } from "@utils/helpers/title";
-  
-  // Hooks
-  import { useToggle } from "@utils/hooks/toggle";
-  
-  const ScheduleSection: FC<{
-    schedule: ScheduleType;
-    disabled?: boolean;
-  }> = ({ schedule, disabled }): JSX.Element => {
-    const { t } = useTranslation("teach");
-  
-    return (
-      <Section className="relative !max-w-[81.5rem] items-center">
-        <BlockingPane
-          icon={<MaterialIcon icon="block" allowCustomSize />}
-          text={t("schedule.blocked")}
-          show={disabled}
-        />
-        <div className="w-full max-w-[70.5rem]">
-          <Header
-            icon={<MaterialIcon icon="dashboard" allowCustomSize />}
-            text={t("schedule.title")}
-          />
-        </div>
-        <Schedule schedule={schedule} role="teacher" />
-        <Actions className="w-full max-w-[70.5rem]">
-          <LinkButton
-            label={t("schedule.action.edit")}
-            type="outlined"
-            icon={<MaterialIcon icon="edit" />}
-            url="/teach/schedule"
-            LinkElement={Link}
-            disabled={disabled}
-          />
-        </Actions>
-      </Section>
-    );
-  };
-  
-  const SubjectsYouTeachSection: FC<{
-    subjects: (SubjectWNameAndCode & { classes: ClassWNumber[] })[];
-    toggleShowAdd: () => void;
-  }> = ({ subjects, toggleShowAdd }): JSX.Element => {
-    const { t } = useTranslation("teach");
-  
-    return (
-      <Section>
-        <Header
-          icon={<MaterialIcon icon="library_books" allowCustomSize />}
-          text={t("subjects.title")}
-        />
-  
-        {subjects.length == 0 ? (
-          // Guide the user on how to add subjects
-          <div>
-            <Card type="stacked" appearance="tonal">
-              <CardHeader
-                icon={<MaterialIcon icon="block" className="text-secondary" />}
-                title={<h3>{t("subjects.noSubjects.title")}</h3>}
-                label={t("subjects.noSubjects.subtitle")}
-              />
-              <CardSupportingText>
-                {t("subjects.noSubjects.supportingText")}
-              </CardSupportingText>
-              <CardActions>
-                <Button
-                  label={t("subjects.action.add")}
-                  type="filled"
-                  onClick={toggleShowAdd}
-                  className="w-full !text-center sm:w-fit"
-                />
-              </CardActions>
-            </Card>
-          </div>
-        ) : (
-          // List of subjects the user teaches
-          <>
-            <LayoutGridCols cols={3}>
-              <ul className="contents">
-                {subjects.map((subject) => (
-                  <li key={subject.id} className="contents">
-                    <SubjectCard subject={subject} />
-                  </li>
-                ))}
-              </ul>
-            </LayoutGridCols>
-            <Actions>
-              <Button
-                label={t("subjects.action.add")}
-                type="outlined"
-                icon={<MaterialIcon icon="add" />}
-                onClick={toggleShowAdd}
-              />
-            </Actions>
-          </>
-        )}
-      </Section>
-    );
-  };
-  
-  const Teach: NextPage<{
-    schedule: ScheduleType;
-    subjects: (SubjectWNameAndCode & {
-      classes: ClassWNumber[];
-    })[];
-  }> = ({ schedule, subjects }) => {
-    const { t } = useTranslation("teach");
-    const router = useRouter();
-  
-    // Dialog controls
-    const [showLogOut, toggleShowLogOut] = useToggle();
-    const [showAdd, toggleShowAdd] = useToggle();
-  
-    return (
-      <>
-        <Head>
-          <title>{createTitleStr(t("title"), t)}</title>
-        </Head>
-        <RegularLayout
-          Title={
-            <Title
-              name={{ title: t("title") }}
-              pageIcon={<MaterialIcon icon="school" />}
-              backGoesTo={toggleShowLogOut}
-              LinkElement={Link}
-            />
-          }
-        >
-          <ScheduleSection schedule={schedule} disabled={subjects.length == 0} />
-          <SubjectsYouTeachSection
-            subjects={subjects}
-            toggleShowAdd={toggleShowAdd}
-          />
-        </RegularLayout>
-  
-        {/* Dialogs */}
-        <LogOutDialog show={showLogOut} onClose={toggleShowLogOut} />
-        <AddSubjectDialog
-          show={showAdd}
-          onClose={toggleShowAdd}
-          onSubmit={() => {
-            toggleShowAdd();
-            router.replace(router.asPath);
-          }}
-        />
-      </>
-    );
-  };
-  
-  export const getServerSideProps: GetServerSideProps = async ({
-    locale,
-    req,
-    res,
-  }) => {
-    const supabase = createServerSupabaseClient({
-      req: req as NextApiRequest,
-      res: res as NextApiResponse,
-    });
-  
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-  
-    const { data: metadata, error: metadataError } = await getUserMetadata(
-      supabase,
-      session!.user.id
-    );
-    if (metadataError) console.error(metadataError);
-  
-    if (!metadata?.onboarded)
-      return {
-        redirect: {
-          destination: getLocalePath("/welcome", locale as LangCode),
-          permanent: false,
-        },
-      };
-  
-    const { data: schedule } = await getSchedule(
-      supabase,
-      "teacher",
-      metadata.teacher!
-    );
-  
-    const { data: subjects } = await getTeachingSubjects(
-      supabase,
-      metadata.teacher!
-    );
-  
-    return {
-      props: {
-        ...(await serverSideTranslations(locale as LangCode, [
-          "common",
-          "account",
-          "teach",
-          "schedule",
-        ])),
-        schedule,
-        subjects,
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "studentPrev",
+        header: t("studentList.table.id"),
+        thClass: "w-1/12",tdClass: "!text-left",
       },
-    };
+
+    ],
+    []
+  );
+
+  //datalookup
+const data =useMemo(
+  () =>
+    students.map((student, idx) => ({
+      idx,
+      studentPrev: '['+student.class.number.toString()+','+"#"+student.classNo.toString()+'] '+nameJoiner(locale, student.name)+' - ' +student.studentID.toString(),
+    })),
+  []
+);
+
+  const { getHeaderGroups, getRowModel } = useReactTable({
+    data,
+    columns,
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  return (<span>
+    <Table className="w-4/12" >
+      <DataTableHeader
+        headerGroups={getHeaderGroups()}
+        //endRow={<th className="w-1/12" />}
+      />
+      <DataTableBody
+        rowModel={getRowModel()}
+        //endRow={(row) => (<td> <Actions align="center"> <CopyButton textToCopy={row.studentPrev} /> </Actions> </td> )}
+      />
+    </Table> 
+    <Table className="fixed top-40 right-10 w-1/2 h-1/2 bg-cyan-50 rounded-md border-cyan-200">returnsometext
+      </Table>
+    </span>
+  );
+};
+
+// Page
+const Students: NextPage<{ students: Student[] }> = ({
+  students,
+}): JSX.Element => {
+  const router = useRouter();
+  const supabase = useSupabaseClient();
+  const { t } = useTranslation("admin");
+
+  const [query, setQuery] = useState<string>("");
+
+  const [showAdd, toggleShowAdd] = useToggle();
+  const [showImport, setShowImport] = useState<boolean>(false);
+  const [showConfDel, toggleShowConfDel] = useToggle();
+
+  const [showEdit, toggleShowEdit] = useToggle();
+  const [editingIdx, setEditingIdx] = useState<number>(-1);
+
+  return (
+    <>
+      {/* Head */}
+      <Head>
+        <title>{createTitleStr(t("studentList.lookup"), t)}</title>
+      </Head>
+
+      {/* Page */}
+      <RegularLayout
+        Title={
+          <Title
+            name={{ title: t("studentList.lookup") }}
+            pageIcon={<MaterialIcon icon="groups" />}
+            backGoesTo="/admin"
+            LinkElement={Link}
+            key="title"
+          />
+        }
+      >
+        <Section>
+          <div className="layout-grid-cols-3">
+            <Search
+              placeholder={t("studentList.searchStudents")}
+              onChange={setQuery}
+            />
+          </div>
+          <div>
+            <StudentTable
+              students={students}
+              query={query}
+              setEditingIdx={setEditingIdx}
+              toggleShowEdit={toggleShowEdit}
+              toggleShowConfDel={toggleShowConfDel}
+            />
+          </div>
+        </Section>
+      </RegularLayout>
+    </>
+  );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({
+  locale,
+  req,
+  res,
+}) => {
+  const supabase = createServerSupabaseClient({
+    req: req as NextApiRequest,
+    res: res as NextApiResponse,
+  });
+
+  const { data, error } = await (supabase as DatabaseClient)
+    .from("student")
+    .select("*, person(*)")
+    .order("std_id", { ascending: false });
+
+  if (error) console.error(error);
+  if (!data) return { props: { students: [] } };
+
+  const students: Student[] = (
+    await Promise.all(
+      data.map(async (student) => await db2Student(supabase, student))
+    )
+  )
+    .sort((a, b) => a.classNo - b.classNo)
+    .sort((a, b) => a.class.number - b.class.number);
+
+  return {
+    props: {
+      ...(await serverSideTranslations(locale as LangCode, [
+        "common",
+        "admin",
+        "account",
+      ])),
+      students,
+    },
   };
-  
-  export default Teach;
-  
+};
+
+export default Students;

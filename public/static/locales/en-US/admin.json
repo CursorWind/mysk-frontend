@@ -13,6 +13,7 @@
   "studentList": {
     "title": "Student list",
     "searchStudents": "Search students",
+    "lookup": "Look up students",
     "table": {
       "id": "ID",
       "class": "Class",
