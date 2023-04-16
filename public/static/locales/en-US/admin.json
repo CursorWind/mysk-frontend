@@ -19,9 +19,19 @@
       "class": "Class",
       "classNo": "Class №",
       "name": "Name",
+      "lookUpList": "Student list",
+      "contact":{
+        "info": "contact infos",
+        "emergency": "emergency contacts",
+        "social media": "social",
+        "email": "School Email"
+      },
       "action": {
         "copy": "Copy name to clipboard",
         "edit": "Edit student"
+      },
+      "others": {
+        "registeredBirthDate": "Birth date"
       }
     },
     "action": {

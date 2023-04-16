@@ -38,9 +38,6 @@ import {
 // Components
 import DataTableHeader from "@components/data-table/DataTableHeader";
 import DataTableBody from "@components/data-table/DataTableBody";
-import ConfirmDelete from "@components/dialogs/ConfirmDelete";
-import EditPersonDialog from "@components/dialogs/EditPerson";
-import ImportDataDialog from "@components/dialogs/ImportData";
 import CopyButton from "@components/CopyButton";
 
 // Backend
@@ -81,8 +78,27 @@ const StudentTable = ({
     () => [
       {
         accessorKey: "studentPrev",
-        header: t("studentList.table.id"),
-        thClass: "w-1/12",tdClass: "!text-left",
+        header: t("studentList.table.lookUpList"),
+        thClass: "w-4/12",
+        tdClass: "!text-left",
+      },
+      {
+        accessorKey: "predictedStudentMail",
+        header: t("studentList.table.contact.email"),
+        thClass: "w-2/12",
+        tdClass: "!text-left",
+      },
+      {
+        accessorKey: "contact",
+        header: t("studentList.table.contact.info"),
+        thClass: "w-2/12",
+        tdClass: "!text-left",
+      },
+      {
+        accessorKey: "other",
+        header: t("studentList.table.others.registeredBirthDate"),
+        thClass: "w-2/12",
+        tdClass: "!text-middle",
       },
 
     ],
@@ -90,11 +106,16 @@ const StudentTable = ({
   );
 
   //datalookup
+  
 const data =useMemo(
   () =>
     students.map((student, idx) => ({
       idx,
       studentPrev: '['+student.class.number.toString()+','+"#"+student.classNo.toString()+'] '+nameJoiner(locale, student.name)+' - ' +student.studentID.toString(),
+      //name: nameJoiner(locale, student.name),
+      contact: student.contacts.toString(),
+      other: student.birthdate.toString(),
+      predictedStudentMail:student.name["en-US"]?.firstName.toString()+'.'+student.name["en-US"]?.lastName.substring(0,3)+'@'+student.role.toString()+'.sk.ac.th',
     })),
   []
 );
@@ -108,20 +129,17 @@ const data =useMemo(
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  return (<span>
-    <Table className="w-4/12" >
+  return (
+      <Table className="w-full">
       <DataTableHeader
         headerGroups={getHeaderGroups()}
-        //endRow={<th className="w-1/12" />}
+        endRow={<th className="w-1/12" > info </th>}
       />
       <DataTableBody
         rowModel={getRowModel()}
-        //endRow={(row) => (<td> <Actions align="center"> <CopyButton textToCopy={row.studentPrev} /> </Actions> </td> )}
+        endRow={(row) => (<td> <Actions align="center"> <CopyButton textToCopy={row.studentPrev} /> </Actions> </td> )}
       />
-    </Table> 
-    <Table className="fixed top-40 right-10 w-1/2 h-1/2 bg-cyan-50 rounded-md border-cyan-200">returnsometext
-      </Table>
-    </span>
+    </Table>
   );
 };
 
