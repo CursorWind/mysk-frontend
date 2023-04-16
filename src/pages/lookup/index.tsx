@@ -79,25 +79,31 @@ const StudentTable = ({
       {
         accessorKey: "studentPrev",
         header: t("studentList.table.lookUpList"),
-        thClass: "w-4/12",
+        thClass: "w-5/12 col-span-2",
+        tdClass: "!text-left",
+      },
+      {
+        accessorKey: "studentPrevTh",
+        header: t("studentList.table.name"),
+        thClass: "w-3/12",
         tdClass: "!text-left",
       },
       {
         accessorKey: "predictedStudentMail",
         header: t("studentList.table.contact.email"),
-        thClass: "w-2/12",
+        thClass: "w-1/12",
         tdClass: "!text-left",
       },
       {
         accessorKey: "contact",
         header: t("studentList.table.contact.info"),
-        thClass: "w-2/12",
+        thClass: "w-1/12",
         tdClass: "!text-left",
       },
       {
         accessorKey: "other",
         header: t("studentList.table.others.registeredBirthDate"),
-        thClass: "w-2/12",
+        thClass: "w-6/12",
         tdClass: "!text-middle",
       },
 
@@ -111,7 +117,8 @@ const data =useMemo(
   () =>
     students.map((student, idx) => ({
       idx,
-      studentPrev: '['+student.class.number.toString()+','+"#"+student.classNo.toString()+'] '+nameJoiner(locale, student.name)+' - ' +student.studentID.toString(),
+      studentPrev: '['+student.class.number.toString()+','+"#"+student.classNo.toString()+'] '+nameJoiner("en-US", student.name)+' - ' +student.studentID.toString(),
+      studentPrevTh: nameJoiner("th", student.name),
       //name: nameJoiner(locale, student.name),
       contact: student.contacts.toString(),
       other: student.birthdate.toString(),
